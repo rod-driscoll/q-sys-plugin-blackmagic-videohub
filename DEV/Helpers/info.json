@@ -1,0 +1,7 @@
+{
+    "version": "1.0.0",
+    "type": "LuaModule",
+    "author": "rod@theavitgroup.com.au",
+    "description": "Helper functions for lua scripts, mostly table printing",
+    "requiredVersion" : "9.5"
+}
