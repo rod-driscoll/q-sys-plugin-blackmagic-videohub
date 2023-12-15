@@ -5,7 +5,7 @@ Q-SYS plugin for BlackMagic VideoHub
 Language: Lua\
 Platform: Q-Sys
 
-Source code location: <https://github.com/rod-driscoll/blackmagic-videohub>
+Source code location: <https://github.com/rod-driscoll/q-sys-plugin-blackmagic-videohub>
 
 ## Deploying code
 
