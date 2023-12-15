@@ -1,4 +1,4 @@
-# q-sys-plugin-kramer-protocol-3000
+# q-sys-plugin-blackmagic-videohub
 
 Q-SYS plugin for BlackMagic VideoHub
 
