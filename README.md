@@ -27,11 +27,16 @@ The files in "./DEV/" are for dev only and may not be the most current code, the
 ### Features tested and functional
 
 * Video switching
-* Output locks
+* Output locks - note output locks can't override locks set to 'L'
   
 ### Features not tested
 
 * Serial control
+
+## Dependencies
+
+Uses the module "Helpers" which is located in /DEV/Helpers.
+To install module dependencies copy the whole directory into "%USERPROFILE%\Documents\QSC\Q-Sys Designer\Modules" and then in Designer go to Tools > Designer Resources, and Install the module.
 
 ## Contributors
 

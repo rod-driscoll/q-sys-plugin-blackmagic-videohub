@@ -119,4 +119,12 @@ for i = 0, props['Output Count'].Value-1 do
     UserPin      = true,
     PinStyle     = "Both"
   })
+  table.insert(ctrls, {
+    Name         = "output_" .. i .. "-source",
+    ControlType  = "Text",
+    Style        = "ComboBox",
+    Count        = 1,
+    UserPin      = true,
+    PinStyle     = "Both"
+  })
 end

@@ -210,6 +210,14 @@ function GetControls(props)
       UserPin      = true,
       PinStyle     = "Both"
     })
+    table.insert(ctrls, {
+      Name         = "output_" .. i .. "-source",
+      ControlType  = "Text",
+      Style        = "ComboBox",
+      Count        = 1,
+      UserPin      = true,
+      PinStyle     = "Both"
+    })
   end
   return ctrls
 end
@@ -307,7 +315,7 @@ function GetControlLayout(props)
     end  
 
     -- create objects for each section so they can be modified easily
-
+    -- add crosspoints (routes, labels, groupbox)
     local UI_crosspoints = {
       Position     = { 0, 8 },
       --Size        = { 0, 0 }, -- GroupBox contains Size of the whole object
@@ -318,7 +326,7 @@ function GetControlLayout(props)
       NameText    = { Style = "Text", Type="Text", Color=colors.White, FontSize=10, HTextAlign="Center", WordWrap = true },
       NumButtons  = { props['Input Count'].Value, props['Output Count'].Value },
       Label       = { Style = "Label", Size = { 74, 14} , Type="Text", FontSize=10, HTextAlign="Center", WordWrap = true },
-      Buttons     = {}, -- to be filled in Init()
+      Outputs     = {}, -- to be filled in Init()
       --groupbox
       GroupBox    = { Type="GroupBox", Text="Crosspoints", StrokeWidth=1, CornerRadius=4, HTextAlign="Left" },
       
@@ -329,71 +337,51 @@ function GetControlLayout(props)
         end
         self.GroupBox.Size = {
           self.Padding[1] + self.NumButtons[1]*(self.Padding[1] + self.Button.Size[1]),
-          self.Padding[2] + self.NumButtons[2]*(self.Padding[2] + self.Button.Size[2]) + self.Label.Size[2]
-        }        
+          self.Padding[2] + self.NumButtons[2]*(self.Padding[2] + self.Button.Size[2]) + self.Label.Size[2]+ self.Padding[2] }
         self.GroupBox.Position  = self.Position
-        self.Buttons = {}
-
         for i=0, self.NumButtons[1]-1 do
-          --local lbl_ = helper.Copy(self.Label) todo
-
           for o=0, self.NumButtons[2]-1 do
             local btn_ = helper.Copy(self.Button)
             btn_['PrettyName'] = "Crosspoints~Output "..o.."~In" .. i .. " -> Out" .. o
             btn_['Legend'] = tostring(i)
             btn_['Position']={
-              self.Position[1] + self.Padding[1] + i*(self.Button.Size[1] + self.Padding[1]),
-              self.Position[2] + self.Padding[2] + o*(self.Button.Size[2] + self.Padding[2]) + self.Label.Size[2]
-            }
+              self.GroupBox.Position[1] + self.Padding[1] + i*(self.Button.Size[1] + self.Padding[1]), -- moving accross
+              self.GroupBox.Position[2] + self.Padding[2] + o*(self.Button.Size[2] + self.Padding[2]) + self.Label.Size[2]+ self.Padding[2] } -- moving down
             btn_.Layout_ID = "vid-input_" ..i.. "-output_" .. o
-            table.insert(self.Buttons, btn_)
+            if self.Outputs[o]==nil then self.Outputs[o]={} end
+            self.Outputs[o][i]=btn_
           end
         end
       end,
 
       Draw = function(self, layout)
+        --for _,l in ipairs(self.Labels ) do table.insert(graphics, l) end
         table.insert(graphics, self.GroupBox)
-        for _,b in ipairs(self.Buttons) do 
-          layout[b.Layout_ID] = b -- layout is the global layout
-        end 
-      end,
-
-      GetButtonPositions = function(self) -- returns diagonal buttons for getting locations to line up other objects
-        local pos_ = {}
-        for i=0, self.NumButtons[1]-1 do
-          pos_[i]={
-            self.Position[1] + self.Padding[1] + i*(self.Button.Size[1] + self.Padding[1]),
-            self.Position[2] + self.Padding[2] + i*(self.Button.Size[2] + self.Padding[2]) + self.Label.Size[2]
-          }
+        for _,o in pairs(self.Outputs) do 
+          for _,i in pairs(o) do layout[i.Layout_ID] = i end -- layout is the global layout
         end
-        return pos_
-      end     
+      end
     }
-
-    --UI_crosspoints.NumButtons = { props['Input Count'].Value, props['Output Count'].Value }
-    --print(table.concat(UI_crosspoints:GetSize(),','))
-
+  
     -- add outputs (names, locks)
     local UI_outputObjects = {
       Position    = helper.Copy(UI_crosspoints.Position),
       --buttons
       Padding     = helper.Copy(UI_crosspoints.Padding),
-      --Button      = helper.Copy(UI_crosspoints.Button),
       NameText    = helper.Copy(UI_crosspoints.NameText), --Size = { 36, 54}      
       NumButtons  = props['Output Count'].Value,
       Buttons     = {}, -- to be filled in Init()
+      Labels      = {}, -- to be filled in Init()
       --groupbox
       GroupBox    = helper.Copy(UI_crosspoints.GroupBox),
 
       Init = function(self)
-        local positions = UI_crosspoints:GetButtonPositions()
         self.NameText.Size = { 54, UI_crosspoints.Button.Size[2] }
         self.LockButtons = {}
         -- GroupBox
         self.GroupBox.Size = {
           self.Padding[1], -- horiz, to be increased as buttons added
-          UI_crosspoints.GroupBox.Size[2] -- vert same as crosspoint GroupBox
-        }        
+          UI_crosspoints.GroupBox.Size[2] } -- vert same as crosspoint GroupBox
         self.GroupBox.Position = self.Position
         self.GroupBox.Text="Outputs"
 
@@ -401,23 +389,46 @@ function GetControlLayout(props)
           -- Names
           local name_ = helper.Copy(self.NameText)
           name_['PrettyName'] = "Outputs~".. o .."~name"
-          name_['Position']={ positions[0][1], positions[o][2] } -- horiz always the same, vert moves down
+          name_['Position']={ 
+            UI_crosspoints.Outputs[0][0].Position[1], -- horiz always the same [output:0][input:0][horiz]
+            UI_crosspoints.Outputs[o][0].Position[2] } -- vert moves down
           name_.Layout_ID = "output_" .. o .. "-name"
           if o==0 then self.GroupBox.Size[1] = self.GroupBox.Size[1] + name_.Size[1] + self.Padding[1] end
           table.insert(self.Buttons, name_)
           
           -- Locks
           local btn_ = helper.Copy(UI_crosspoints.Button)
-          name_['PrettyName'] = "Outputs~".. o .."~lock"
+          btn_['PrettyName'] = "Outputs~".. o .."~lock"
           btn_['Legend'] = tostring(o)
           btn_['Position']={ 
             name_.Position[1] + name_.Size[1] + self.Padding[1], -- horiz always the same
-            positions[o][2] -- vert moves down to line up with the crosspoint buttons
-          } 
+            name_.Position[2] } -- vert moves down to line up with the crosspoint buttons
           btn_.Layout_ID = "output_" .. o .. "-lock"
           if o==0 then self.GroupBox.Size[1] = self.GroupBox.Size[1] + btn_.Size[1] + self.Padding[1] end
-
           table.insert(self.Buttons, btn_)
+          
+          -- Lock label (the word lock)
+          if o==1 then
+            local lbl_ = helper.Copy(UI_crosspoints.Label)
+            lbl_.Size[1] =  btn_.Size[1]
+            lbl_["Text"] = 'Lock'
+            lbl_['Position']= {
+              btn_.Position[1], -- horiz always the same
+              self.GroupBox.Position[2] + self.Padding[2] } -- vert moves down
+              if o==0 then self.GroupBox.Size[1] = self.GroupBox.Size[1] + lbl_.Size[1] + self.Padding[1] end
+            table.insert(self.Labels, lbl_)
+          end
+
+          -- left column of labels (numbers only)
+          local num_ = helper.Copy(UI_crosspoints.Label)
+          num_.Size = { 18, btn_.Size[2] }
+          num_["Text"] = tostring(o)
+          num_['Position']= {
+            btn_.Position[1] + btn_.Size[1] + self.Padding[1], -- horiz always the same
+            btn_.Position[2] } -- vert moves down to line up with the crosspoint buttons
+          if o==0 then self.GroupBox.Size[1] = self.GroupBox.Size[1] + num_.Size[1] + self.Padding[1] end
+          table.insert(self.Labels, num_)
+
         end
         -- set new position of UI_Crosspoints
         UI_crosspoints.Position[1] = self.GroupBox.Position[1] + self.GroupBox.Size[1] + self.Padding[1]  -- move the xpts over
@@ -426,76 +437,117 @@ function GetControlLayout(props)
 
       Draw = function(self, layout)
         table.insert(graphics, self.GroupBox)
-        for _,b in ipairs(self.Buttons) do 
-          layout[b.Layout_ID] = b -- layout is the global layout
-        end 
+        for _,l in ipairs(self.Labels ) do table.insert(graphics, l) end
+        for _,b in ipairs(self.Buttons) do layout[b.Layout_ID] = b  end-- layout is the global layout
       end
     }
 
    -- add inputs (names)
-   local UI_inputObjects = {
-    Position    = {},
-    --buttons
-    Padding     = helper.Copy(UI_crosspoints.Padding),
-    Button      = helper.Copy(UI_crosspoints.Button),
-    NameText    = helper.Copy(UI_crosspoints.NameText), --Size = { 36, 54}      
-    NumButtons  = props['Input Count'].Value,
-    Buttons     = {}, -- to be filled in Init()
-    --groupbox
-    GroupBox    = helper.Copy(UI_crosspoints.GroupBox),
+    local UI_inputObjects = {
+      Position    = {},
+      --buttons
+      Padding     = helper.Copy(UI_crosspoints.Padding),
+      Button      = helper.Copy(UI_crosspoints.Button),
+      NameText    = helper.Copy(UI_crosspoints.NameText), --Size = { 36, 54}      
+      NumButtons  = props['Input Count'].Value,
+      Buttons     = {}, -- to be filled in Init()
+      Labels      = {}, -- to be filled in Init()
+      --groupbox
+      GroupBox    = helper.Copy(UI_crosspoints.GroupBox),
 
-    Init = function(self)
-      local positions = UI_crosspoints:GetButtonPositions()
-      self.NameText.Size = { UI_crosspoints.Button.Size[1], 54 }
-      -- GroupBox   
-      self.GroupBox.Size = {
-        UI_crosspoints.GroupBox.Size[1], -- horiz, same as crosspoints
-        UI_crosspoints.Label.Size[2] + self.Padding[2], -- vert, increase as objects added
-      }        
-      self.Position = {
-        UI_crosspoints.GroupBox.Position[1],
-        UI_crosspoints.GroupBox.Position[2] + UI_crosspoints.GroupBox.Size[2] + self.Padding[2]
-      }
-      self.GroupBox.Position = self.Position
-      self.GroupBox.Text="Inputs"
+      Init = function(self)
+        self.NameText.Size = { UI_crosspoints.Button.Size[1], 54 }
+        self.Position = {
+          UI_crosspoints.GroupBox.Position[1],
+          UI_crosspoints.GroupBox.Position[2] + UI_crosspoints.GroupBox.Size[2] + self.Padding[2] }  
+        -- GroupBox   
+        self.GroupBox.Size = {
+          UI_crosspoints.GroupBox.Size[1], -- horiz, same as crosspoints
+          self.Padding[2]  + UI_crosspoints.Label.Size[2]+ self.Padding[2] } -- vert, increase as objects added   
+        self.GroupBox.Position = self.Position
+        self.GroupBox.Text="Inputs"
 
-      for i=0, self.NumButtons-1 do
-        -- Names
-        local name_ = helper.Copy(self.NameText)
-        name_['PrettyName'] = "Inputs~".. i .."~name"
-        name_['Position']={ 
-          positions[i][1], -- horiz moves accross
-          UI_crosspoints.Label.Size[2] + self.Padding[2] + self.GroupBox.Position[2] -- vert always the same
-        }
-        name_.Layout_ID = "input_" .. i .. "-name"
+        for i=0, self.NumButtons-1 do
+          -- top row of labels (numbers only)
+          local lbl_ = helper.Copy(UI_crosspoints.Label)
+          lbl_.Size[1] = self.Button.Size[1]
+          lbl_["Text"] = tostring(i)            
+          lbl_['Position']={
+            UI_crosspoints.Outputs[0][i].Position[1], -- horiz moves accross
+            UI_crosspoints.Label.Size[2] + self.Padding[2] + self.GroupBox.Position[2] } -- vert always the same
+          if i==0 then self.GroupBox.Size[2] = self.GroupBox.Size[2] + lbl_.Size[2] + self.Padding[2] end
+          table.insert(self.Labels, lbl_)
 
-        if i==0 then self.GroupBox.Size[2] = self.GroupBox.Size[2] + name_.Size[2] + self.Padding[2] end
-        table.insert(self.Buttons, name_)
+          -- Names
+          local name_ = helper.Copy(self.NameText)
+          name_['PrettyName'] = "Inputs~".. i .."~name"
+          name_['Position']={ 
+            lbl_.Position[1], -- horiz moves accross
+            lbl_.Position[2] + lbl_.Size[2] + self.Padding[2] } -- vert always the same
+          name_.Layout_ID = "input_" .. i .. "-name"
+          if i==0 then self.GroupBox.Size[2] = self.GroupBox.Size[2] + name_.Size[2] + self.Padding[2] end
+          table.insert(self.Buttons, name_)
+        end
+      end,
+
+      Draw = function(self, layout)
+        table.insert(graphics, self.GroupBox)
+        for _,l in ipairs(self.Labels ) do table.insert(graphics, l) end
+        for _,b in ipairs(self.Buttons) do  layout[b.Layout_ID] = b end -- layout is the global layout
       end
-    end,
+    }
 
-    Draw = function(self, layout)
-      table.insert(graphics, self.GroupBox)
-      for _,b in ipairs(self.Buttons) do 
-        layout[b.Layout_ID] = b -- layout is the global layout
-      end 
-    end
-  }
-    -- move base position of xpts
+    -- add post fade objects (source list)
+    local UI_postFadeObjects = {
+      Position    = helper.Copy(UI_crosspoints.Position),
+      --buttons
+      Padding     = helper.Copy(UI_crosspoints.Padding),
+      NameText    = helper.Copy(UI_crosspoints.NameText), --Size = { 36, 54}      
+      Selector    = { Style = "ComboBox", Type="Text", Size={100, UI_crosspoints.Button.Size[2]}, Color=colors.White, FontSize=10, HTextAlign="Center", WordWrap = true },
+      NumButtons  = props['Output Count'].Value,
+      Buttons     = {}, -- to be filled in Init()
+      --groupbox
+      GroupBox    = helper.Copy(UI_crosspoints.GroupBox),
 
-    UI_outputObjects.Position = helper.Copy(UI_crosspoints.Position)
+      Init = function(self)
+        self.NameText.Size = { 54, UI_crosspoints.Button.Size[2] }
+        -- GroupBox
+        self.GroupBox.Size = {
+          self.Padding[1], -- horiz, to be increased as buttons added
+          UI_crosspoints.GroupBox.Size[2] } -- vert same as crosspoint GroupBox
+        self.GroupBox.Position = {
+          UI_crosspoints.GroupBox.Position[1] + UI_crosspoints.GroupBox.Size[1] + self.Padding[1],
+          UI_crosspoints.GroupBox.Position[2] }
+        self.GroupBox.Text="Selectors"
 
+        for o=0, self.NumButtons-1 do
+          -- Names
+          local selector_ = helper.Copy(self.Selector)
+          selector_['PrettyName'] = "Outputs~".. o .."~source"
+          selector_['Position']={ 
+            self.GroupBox.Position[1] + self.Padding[1], 
+            UI_crosspoints.Outputs[o][0].Position[2] } -- vert moves down
+          selector_.Layout_ID = "output_" .. o .. "-source"
+          if o==0 then self.GroupBox.Size[1] = self.GroupBox.Size[1] + selector_.Size[1] + self.Padding[1] end
+          table.insert(self.Buttons, selector_)
+        end
+      end,
 
-    UI_crosspoints.Position = { UI_crosspoints.Position[1], UI_crosspoints.Position[2] } -- move UI_crosspoints over
-    --UI_crosspoints:AddRowToLeft()
+      Draw = function(self, layout)
+        table.insert(graphics, self.GroupBox)
+        for _,b in ipairs(self.Buttons) do layout[b.Layout_ID] = b  end-- layout is the global layout
+      end
+    }
 
     UI_crosspoints:Init() -- initialize the crosspoints so other components can reference it's positions
     UI_outputObjects:Init() -- this also moves crosspoints to the right
     UI_inputObjects:Init()
+    UI_postFadeObjects:Init()
     
     UI_crosspoints:Draw(layout)
     UI_outputObjects:Draw(layout)
     UI_inputObjects:Draw(layout)
+    UI_postFadeObjects:Draw(layout)
 
     -- add some group boxes and labels to make it pretty
 

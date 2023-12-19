@@ -1,3 +1,4 @@
+
 local helper = require('Helpers')
 
 -- Control aliases
@@ -487,12 +488,15 @@ function ParseOutputLabels(str)
     end
 end
 
+local InputLabels = {}
+
 function ParseInputLabels(str)
   --print('ParseInputLabels('..str..')')
   local in_, name_ = str:match('(%d+) (.+)')
     --print('ParseInputLabel('..in_..', '..name_..')')
     if Controls["input_" .. in_ .. "-name"]~=nil then
       Controls["input_" .. in_ .. "-name"].String = name_
+      InputLabels[tonumber(in_)] = str
     end
 end
 
@@ -516,10 +520,12 @@ function ParseRoute(str) -- input and output 0 exist
   print('ParseRoute('..out_..', '..in_..')')
   for i=0, Properties["Input Count"].Value do
     if Controls["vid-input_" .. i .. "-output_" .. out_]~=nil then
-      print("Controls[vid-input_" .. i .. "-output_" .. out_..'].Boolean = '..tostring(i==tonumber(in_)))
+      --print("Controls[vid-input_" .. i .. "-output_" .. out_..'].Boolean = '..tostring(i==tonumber(in_)))
       Controls["vid-input_" .. i .. "-output_" .. out_].Boolean = i==tonumber(in_)
     end
   end
+    --print('choice['..in_..']:'..Controls["output_" ..out_.. "-source"].Choices[tonumber(in_)+1])
+    Controls["output_" ..out_.. "-source"].String =  Controls["output_" ..out_.. "-source"].Choices[tonumber(in_)+1]
 end
 
 function ParseConfig(str)
@@ -583,17 +589,29 @@ function ParseResponse(msg)
           m1_ = m1_:gsub(':','')
           if callbacks_[m1_]~=nil then 
             if m1_=='NAK' or m1_=='ACK' then 
-              print(m1_..' received')
+              if DebugFunction then print(m1_..' received') end
             else
-              print('Parsing category: '..m1_)
+              if DebugFunction then print('Parsing category: '..m1_) end
               cb_=callbacks_[m1_]
             end
           else 
-            print('unhandled category: '..m1_)
+            if DebugFunction then print('unhandled category: '..m1_) end
             cb_=nil
           end
         elseif cb_~=nil then cb_(m1_) end
         i=i+1
+      end
+      if cb_~=nil and cb_==ParseInputLabels then 
+        --if DebugFunction then print('InputLabels') end
+        local choices_ = {}
+		    for i = 0, Properties['Input Count'].Value-1 do
+          if InputLabels[i]~=nil then table.insert(choices_, InputLabels[i]) 
+          else table.insert(choices_, i..' INPUT '..i) end
+        end
+        --if DebugFunction then print('choices_') end
+		    for o = 0, Properties['Output Count'].Value-1 do
+          Controls["output_" .. o .. "-source"].Choices = choices_
+        end
       end
     end 
 
@@ -628,6 +646,8 @@ end
 -- Initialize
 -------------------------------------------------------------------------------	
 function TestFeedbacks()
+  local test_ = "INPUT LABELS:\x0A0 INPUT ZERO\x0A1 INPUT ONE\x0A2 INPUT TWO\x0A\x0A"
+  ParseResponse(test_)
 end
 
 function Initialize()
@@ -648,12 +668,17 @@ function Initialize()
         SetOutputLock(o, ctl.Boolean)
       end
 
+      Controls["output_" .. o .. "-source"].EventHandler = function(ctl) 
+        local in_, name_ = ctl.String:match('(%d+) (.+)')
+  			if DebugFunction then print("output_" .. o .. "-source selected: "..name_) end
+        SetRoute(Layers.Video, o, tonumber(in_), true) 
+      end 
+
 			for i = 0, Properties['Input Count'].Value-1 do
 				-- Crosspoint EventHandlers
 				Controls["vid-input_" .. i .. "-output_" .. o].EventHandler = function(ctl) 
 					if DebugFunction then print("vid-input_" .. i .. "-output_" .. o .. " pressed") end
 					SetRoute(Layers.Video, o, i, ctl.Value)
-					if(o == 0) then ctl.Value = 0 end -- let the individual output buttons track state
 				end
 			end
 			
