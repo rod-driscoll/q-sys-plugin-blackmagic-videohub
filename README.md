@@ -11,6 +11,10 @@ Source code location: <https://github.com/rod-driscoll/q-sys-plugin-blackmagic-v
 
 ## Deploying code
 
+Copy the *.qplug file into "%USERPROFILE%\Documents\QSC\Q-Sys Designer\Plugins" then drag the plugin into a design.
+
+## Developing code
+
 Instructions and resources for Q-Sys plugin development is available at:
 
 * <https://q-syshelp.qsc.com/DeveloperHelp/>
