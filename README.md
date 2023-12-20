@@ -7,6 +7,8 @@ Platform: Q-Sys
 
 Source code location: <https://github.com/rod-driscoll/q-sys-plugin-blackmagic-videohub>
 
+![Matrix switcher tab](https://github.com/rod-driscoll/q-sys-plugin-blackmagic-videohub/blob/main/content/images/ui-tab-matrix-switcher.png)
+
 ## Deploying code
 
 Instructions and resources for Q-Sys plugin development is available at:
