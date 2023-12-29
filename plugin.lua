@@ -1,6 +1,3 @@
--- Q-Sys plugin for BlackMagic VideoHub
--- <https://documents.blackmagicdesign.com/UserManuals/Videohub12GInstallation.pdf?_v=1680591612000>
--- 20231212 v1.0.0 Rod Driscoll<rod@theavitgroup.com.au>
 
 -- Information block for the plugin
 --[[ #include "info.lua" ]]
