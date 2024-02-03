@@ -12,3 +12,7 @@ if not exist "%userprofile%\Documents\QSC\Q-Sys Designer\Plugins\%2" mkdir "%use
 ::      QSD was then throwing an access error while the file was being written, so I added code in C# to catch access denied errors,
 ::      in favour of waiting for the next changed notification that allowed the file to be read (i.e. file copying finished)
 COPY /Y "%1\%2.qplug" "%userprofile%\Documents\QSC\Q-Sys Designer\Plugins\%2\%2.qplug"
+
+:: Move the local copy of the plugin to a .\demo directory to make it easier to find
+if not exist "%1\demo" mkdir "%1\demo"
+MOVE /Y "%1\%2.qplug" "%1\Demo\%2.qplug"
