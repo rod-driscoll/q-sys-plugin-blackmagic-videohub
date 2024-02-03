@@ -1,5 +1,5 @@
 
-local helper = require('Helpers')
+local helper = require('helpers')
 
 -- Control aliases
 Status = Controls.Status
