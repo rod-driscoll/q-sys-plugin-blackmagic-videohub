@@ -111,17 +111,17 @@ elseif(CurrentPage == 'Device') then
         self.Padding[1] + self.NumButtons[1]*(self.Padding[1] + self.Button.Size[1]),
         self.Padding[2] + self.NumButtons[2]*(self.Padding[2] + self.Button.Size[2]) + self.Label.Size[2]+ self.Padding[2] }
       self.GroupBox.Position  = self.Position
-      for i=0, self.NumButtons[1]-1 do          
-        for o=0, self.NumButtons[2]-1 do
+      for i=1, self.NumButtons[1] do          
+        for o=1, self.NumButtons[2] do
           local btn_ = helper.Copy(self.Button)
-          btn_['PrettyName'] = "Crosspoints~Output "..o.."~In" .. i .. " -> Out" .. o
+          btn_['PrettyName'] = "Crosspoints~Output "..o.."~In" ..i .. " -> Out" ..o
           btn_['Legend'] = tostring(i)
           btn_['Position']={
-            self.GroupBox.Position[1] + self.Padding[1] + i*(self.Button.Size[1] + self.Padding[1]), -- moving accross
-            self.GroupBox.Position[2] + self.Padding[2] + o*(self.Button.Size[2] + self.Padding[2]) + self.Label.Size[2]+ self.Padding[2] } -- moving down
-          btn_.Layout_ID = "vid-input_" ..i.. "-output_" .. o
-          if self.Outputs[o]==nil then self.Outputs[o]={} end
-          self.Outputs[o][i]=btn_
+            self.GroupBox.Position[1] + self.Padding[1] + (i-1)*(self.Button.Size[1] + self.Padding[1]), -- moving accross
+            self.GroupBox.Position[2] + self.Padding[2] + (o-1)*(self.Button.Size[2] + self.Padding[2]) + self.Label.Size[2]+ self.Padding[2] } -- moving down
+          btn_.Layout_ID = "vid-input_" ..i.. "-output_" ..o
+          if self.Outputs[(o-1)]==nil then self.Outputs[(o-1)]={} end
+          self.Outputs[(o-1)][(i-1)]=btn_
         end
       end
     end,
@@ -170,17 +170,17 @@ elseif(CurrentPage == 'Device') then
 
       local newPos_ = {}
 
-      for o=0, self.NumButtons-1 do
+      for o=1, self.NumButtons do
         newPos_ = {
           self.GroupBox.Position[1] + self.Padding[1], -- horiz always the same [output:0][input:0][horiz]
-          UI_crosspoints.Outputs[o][0].Position[2] } -- vert moves down
+          UI_crosspoints.Outputs[(o-1)][0].Position[2] } -- vert moves down
         
           -- left column of labels (numbers only)
         local num_ = helper.Copy(UI_crosspoints.Label)
         num_.Size = { 18, UI_crosspoints.Button.Size[2] }
         num_["Text"] = tostring(o)
         num_['Position'] = helper.Copy(newPos_)
-        if o==0 then 
+        if o==1 then 
           self.GroupBox.Size[1] = self.GroupBox.Size[1] + num_.Size[1] + self.Padding[1]
         end
         newPos_[1] = newPos_[1] + num_.Size[1] + self.Padding[1]
@@ -188,10 +188,10 @@ elseif(CurrentPage == 'Device') then
 
         -- Names
         local name_ = helper.Copy(self.NameText)
-        name_['PrettyName'] = "Outputs~".. o .."~name"
+        name_['PrettyName'] = "Outputs~"..o.."~name"
         name_['Position'] = helper.Copy(newPos_)
-        name_.Layout_ID = "output_" .. o .. "-name"
-        if o==0 then 
+        name_.Layout_ID = "output_" ..o.. "-name"
+        if o==1 then 
           self.GroupBox.Size[1] = self.GroupBox.Size[1] + name_.Size[1] + self.Padding[1]
         end
         newPos_[1] = newPos_[1] + name_.Size[1] + self.Padding[1]
@@ -199,17 +199,17 @@ elseif(CurrentPage == 'Device') then
         
         -- Locks
         local btn_ = helper.Copy(UI_crosspoints.Button)
-        btn_['PrettyName'] = "Outputs~".. o .."~lock"
+        btn_['PrettyName'] = "Outputs~"..o.."~lock"
         btn_['Legend'] = tostring(o)
         btn_['Position'] = helper.Copy(newPos_)
-        btn_.Layout_ID = "output_" .. o .. "-lock"
-        if o==0 then
+        btn_.Layout_ID = "output_" ..o.. "-lock"
+        if o==1 then
           self.GroupBox.Size[1] = self.GroupBox.Size[1] + btn_.Size[1] + self.Padding[1] end
         newPos_[1] = newPos_[1] + btn_.Size[1] + self.Padding[1]
         table.insert(self.Buttons, btn_)
         
         -- Lock label (the word lock)
-        if o==0 then
+        if o==1 then
           local lbl_ = helper.Copy(UI_crosspoints.Label)
           lbl_.Size[1] = btn_.Size[1]
           lbl_["Text"] = 'Lock'
@@ -268,25 +268,25 @@ elseif(CurrentPage == 'Device') then
       self.GroupBox.Position = self.Position
       self.GroupBox.Text="Inputs"
 
-      for i=0, self.NumButtons-1 do
+      for i=1, self.NumButtons do
         -- top row of labels (numbers only) above crosspoints
         local lbl_ = helper.Copy(UI_crosspoints.Label)
         lbl_.Size[1] = self.Button.Size[1]
         lbl_["Text"] = tostring(i)            
         lbl_['Position']={
-          UI_crosspoints.Outputs[0][i].Position[1], -- horiz moves accross
+          UI_crosspoints.Outputs[0][(i-1)].Position[1], -- horiz moves accross
           self.Position[2] + UI_crosspoints.Label.Size[2] + self.Padding[2] } -- vert always the same
         --if i==0 then self.GroupBox.Size[2] = self.GroupBox.Size[2] + lbl_.Size[2] + self.Padding[2] end
         table.insert(self.Labels, lbl_)
 
         -- Names - below crosspoints
         local name_ = helper.Copy(self.NameText)
-        name_['PrettyName'] = "Inputs~".. i .."~name"
+        name_['PrettyName'] = "Inputs~"..i.."~name"
         name_['Position']={ 
           lbl_.Position[1], -- horiz moves accross
           lbl_.Position[2] + lbl_.Size[2] + self.Padding[2] + UI_crosspoints.GroupBox.Size[2] + self.Padding[2] } -- vert always the same
-        name_.Layout_ID = "input_" .. i .. "-name"
-        if i==0 then self.GroupBox.Size[2] = self.GroupBox.Size[2] + name_.Size[2] + self.Padding[2] end
+        name_.Layout_ID = "input_" ..i.. "-name"
+        if i==1 then self.GroupBox.Size[2] = self.GroupBox.Size[2] + name_.Size[2] + self.Padding[2] end
         table.insert(self.Buttons, name_)
       end
       
@@ -340,15 +340,15 @@ elseif(CurrentPage == 'Device') then
         UI_inputObjects.GroupBox.Position[2] }
       self.GroupBox.Text="Selectors"
 
-      for o=0, self.NumButtons-1 do
+      for o=1, self.NumButtons do
         -- Names
         local selector_ = helper.Copy(self.Selector)
-        selector_['PrettyName'] = "Outputs~".. o .."~source"
+        selector_['PrettyName'] = "Outputs~"..o.."~source"
         selector_['Position']={ 
           self.GroupBox.Position[1] + self.Padding[1], 
-          UI_crosspoints.Outputs[o][0].Position[2] } -- vert moves down
-        selector_.Layout_ID = "output_" .. o .. "-source"
-        if o==0 then self.GroupBox.Size[1] = self.GroupBox.Size[1] + selector_.Size[1] + self.Padding[1] end
+          UI_crosspoints.Outputs[(o-1)][0].Position[2] } -- vert moves down
+        selector_.Layout_ID = "output_" ..o.. "-source"
+        if o==1 then self.GroupBox.Size[1] = self.GroupBox.Size[1] + selector_.Size[1] + self.Padding[1] end
         table.insert(self.Buttons, selector_)
       end
 

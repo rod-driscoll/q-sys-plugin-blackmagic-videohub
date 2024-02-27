@@ -1,10 +1,9 @@
-
 local helper = require('helpers')
 
 -- Control aliases
 Status = Controls.Status
 
-local SimulateFeedback = true
+local SimulateFeedback = System.IsEmulating 
 -- Variables and flags
 DebugTx=false
 DebugRx=false
@@ -412,8 +411,8 @@ end
 
 function SetRouteAllFeedback(outputs)
 	if DebugFunction then print("SetRouteAllFeedback("..table.concat(outputs)..")") end
-	for o=1, #outputs do 
-		SetRouteLayerFeedback(Layers.Video, o, outputs[o])
+	for o=0, #outputs-1 do 
+		SetRouteLayerFeedback(Layers.Video, o+1, outputs[o])
 	end
 end
 
@@ -482,6 +481,7 @@ end
 function ParseOutputLabels(str)
   --print('ParseOutputLabels('..str..')')
   local out_, name_ = str:match('(%d+) (.+)')
+	out_ = tonumber(out_)+1
     --print('ParseOutputLabel('..out_..', '..name_..')')
     if Controls["output_" .. out_ .. "-name"]~=nil then
       Controls["output_" .. out_ .. "-name"].String = name_
@@ -491,12 +491,13 @@ end
 local InputLabels = {}
 
 function ParseInputLabels(str)
-  --print('ParseInputLabels('..str..')')
+  print('ParseInputLabels("'..str..'"")')
   local in_, name_ = str:match('(%d+) (.+)')
-    --print('ParseInputLabel('..in_..', '..name_..')')
+	in_ = tonumber(in_)+1
+    print('ParseInputLabel('..in_..', '..name_..')')
     if Controls["input_" .. in_ .. "-name"]~=nil then
       Controls["input_" .. in_ .. "-name"].String = name_
-      InputLabels[tonumber(in_)] = str
+      InputLabels[in_-1] = name_
     end
 end
 
@@ -505,6 +506,7 @@ function ParseLocks(str)
   local out_, v_ = str:match('(%d+) ([LUO])') -- U:unlock, L:lock(returns O, not L), O:On (lock)
   -- outputs can be locked so that the system can't unlock them, in this case they return 'L' 
   if v_~=nil then
+		out_ = tonumber(out_)+1
     local locked_ = v_~='U'  
     --print('ParseLocks('..out_..', '..tostring(locked_)..')')
     if Controls["output_" .. out_ .. "-lock"]~=nil then
@@ -514,18 +516,22 @@ function ParseLocks(str)
   end
 end
 
-function ParseRoute(str) -- input and output 0 exist
-  --print('ParseRoute('..str..')')
+function ParseRoute(str) -- input and output protocol starts at idx 0
+  print('ParseRoute("'..str..'")')
   local out_, in_ = str:match('(%d+) (%d+)')
+	out_ = tonumber(out_)+1
+	in_ = tonumber(in_)+1
   print('ParseRoute('..out_..', '..in_..')')
-  for i=0, Properties["Input Count"].Value do
+  for i=1, Properties["Input Count"].Value do
     if Controls["vid-input_" .. i .. "-output_" .. out_]~=nil then
-      --print("Controls[vid-input_" .. i .. "-output_" .. out_..'].Boolean = '..tostring(i==tonumber(in_)))
-      Controls["vid-input_" .. i .. "-output_" .. out_].Boolean = i==tonumber(in_)
+      --print("Controls[vid-input_" .. i .. "-output_" .. out_..'].Boolean = '..tostring(i==in_))
+      Controls["vid-input_" .. i .. "-output_" .. out_].Boolean = i==in_
     end
   end
-    --print('choice['..in_..']:'..Controls["output_" ..out_.. "-source"].Choices[tonumber(in_)+1])
-    Controls["output_" ..out_.. "-source"].String =  Controls["output_" ..out_.. "-source"].Choices[tonumber(in_)+1]
+  if Controls["output_" ..out_.. "-source"].Choices[in_] ~= nil then
+      print('choice['..in_..']:'..Controls["output_" ..out_.. "-source"].Choices[in_])
+      Controls["output_" ..out_.. "-source"].String = Controls["output_" ..out_.. "-source"].Choices[in_]
+  end
 end
 
 function ParseConfig(str)
@@ -555,11 +561,11 @@ function ParseResponse(msg)
 	local delimPos_ = msg:find("\x0a\x0a")
 	if DebugFunction then 
   	if delimPos_==nil then
-        print("ParseResponse("..string.len(msg)..", delimiter not found) Called") 
+        print("ParseResponse(len:"..string.len(msg)..", delimiter not found) Called") 
         local g_ = msg:gmatch('(.-)\x0a\x0a') -- get the sections of data
         print("match == nil: "..tostring(g_==nil))
       else
-        print("ParseResponse("..string.len(msg)..","..delimPos_..") Called") 
+        print("ParseResponse(len:"..string.len(msg)..", delimiter pos:"..delimPos_..") Called") 
       end
   end
 	local valid_ = msg:len()>0 and delimPos_~=nil
@@ -579,12 +585,13 @@ function ParseResponse(msg)
     local cb_ = nil
     local g_ = msg:gmatch('(.-)\x0a\x0a') -- get the sections of data
     for m_ in g_ do
-      --print('match: '..m_) -- good
+      print('match: '..m_) -- good
       if m_:sub(-1)~='\x0a' then m_=m_..'\x0a' end -- the first match removed the \x0a from the last match
-      local g1_ = m_:gmatch('(.-)\x0a')  -- e.g. "VIDEO OUTPUT ROUTING:\x0D\x0A2 3\x0D\x0A\x0D\x0A"i = 1
+      local g1_ = m_:gmatch('(.-)\x0a')  -- e.g. "VIDEO OUTPUT ROUTING:\x0D\x0A2 3\x0D\x0A\x0D\x0A" i = 1
       local i = 1
       for m1_ in g1_ do
-        --print('match1: '..m1_)
+        m1_ = m1_:match('(%C+)') -- remove control characters
+        print('match1: '..m1_)
         if i==1 then
           m1_ = m1_:gsub(':','')
           if callbacks_[m1_]~=nil then 
@@ -602,14 +609,14 @@ function ParseResponse(msg)
         i=i+1
       end
       if cb_~=nil and cb_==ParseInputLabels then 
-        --if DebugFunction then print('InputLabels') end
+        if DebugFunction then print('InputLabels') end
         local choices_ = {}
 		    for i = 0, Properties['Input Count'].Value-1 do
           if InputLabels[i]~=nil then table.insert(choices_, InputLabels[i]) 
-          else table.insert(choices_, i..' INPUT '..i) end
+          else table.insert(choices_, (i+1)..' INPUT '..(i+1)) end
         end
-        --if DebugFunction then print('choices_') end
-		    for o = 0, Properties['Output Count'].Value-1 do
+        if DebugFunction then print('choices_') end
+		    for o = 1, Properties['Output Count'].Value do
           Controls["output_" .. o .. "-source"].Choices = choices_
         end
       end
@@ -629,15 +636,15 @@ end
 local function SetRoute(layer, dest, src, state)
 	if DebugFunction then print("Send layer " .. layer .. " from src " .. src .. " to dest " .. dest) end
 	local cmd_ = Request["Route"]
-	cmd_.Data = dest..' '.. src
+	cmd_.Data = (dest-1)..' '.. (src-1)
 	Send(cmd_)
-	if SimulateFeedback then ParseResponse(string.format("%s\x0a %s\x0a\x0a", cmd_.Command, cmd_.Data)) end
+	if SimulateFeedback then ParseResponse(string.format("%s\x0d\x0a%s\x0a\x0a", cmd_.Command, cmd_.Data)) end
 end
 
 local function SetOutputLock(index, value)
 	if DebugFunction then print("Set output " .. index .. " lock to " .. tostring(value)) end
 	local cmd_ = Request["OutputLock"]
-	cmd_.Data = index..' '.. (value and 'L' or 'U') -- U:unlock, L:lock(returns O, not L), O:On (lock)
+	cmd_.Data = (index-1)..' '.. (value and 'L' or 'U') -- U:unlock, L:lock(returns O, not L), O:On (lock)
   -- outputs can be locked so that the system can't unlock them, in this case they return 'L' 
 	Send(cmd_)
 end
@@ -646,8 +653,10 @@ end
 -- Initialize
 -------------------------------------------------------------------------------	
 function TestFeedbacks()
-  local test_ = "INPUT LABELS:\x0A0 INPUT ZERO\x0A1 INPUT ONE\x0A2 INPUT TWO\x0A\x0A"
-  ParseResponse(test_)
+  if Controls["output_1-source"].Choices == nil or Controls["output_1-source"].Choices[1] == nil then
+    local test_ = "INPUT LABELS:\x0A0 INPUT ONE\x0A1 INPUT TWO\x0A2 INPUT THREE\x0A3 INPUT FOUR\x0A\x0A"
+    ParseResponse(test_)
+  end
 end
 
 function Initialize()
@@ -661,7 +670,7 @@ function Initialize()
 
 	--helper.TablePrint(Properties, 1)
 	if(Properties['Output Count'].Value > 0 and Properties['Input Count'].Value > 0) then
-		for o = 0, Properties['Output Count'].Value-1 do
+		for o = 1, Properties['Output Count'].Value do
 
       Controls["output_" .. o .. "-lock"].EventHandler = function(ctl) 
   			if DebugFunction then print("output_" .. o .. "-lock pressed: "..tostring(ctl.Boolean)) end
@@ -669,12 +678,12 @@ function Initialize()
       end
 
       Controls["output_" .. o .. "-source"].EventHandler = function(ctl) 
-        local in_, name_ = ctl.String:match('(%d+) (.+)')
-  			if DebugFunction then print("output_" .. o .. "-source selected: "..name_) end
-        SetRoute(Layers.Video, o, tonumber(in_), true) 
+				local in_ = helper.GetIndexfromValue(ctl.Choices, ctl.String)
+        if DebugFunction then print("output_" .. o .. "-source selected: "..ctl.String) end
+        SetRoute(Layers.Video, o, in_, true) 
       end 
 
-			for i = 0, Properties['Input Count'].Value-1 do
+			for i = 1, Properties['Input Count'].Value do
 				-- Crosspoint EventHandlers
 				Controls["vid-input_" .. i .. "-output_" .. o].EventHandler = function(ctl) 
 					if DebugFunction then print("vid-input_" .. i .. "-output_" .. o .. " pressed") end
@@ -688,7 +697,10 @@ function Initialize()
 
 	Disconnected()
 	Connect()
-	--TestFeedbacks()
+  if System.IsEmulating then 
+    print("System is emulating.")
+	  TestFeedbacks()
+  end
 	--Heartbeat:Start(PollRate)
 end
 

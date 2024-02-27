@@ -76,8 +76,8 @@ table.insert(ctrls, {
 })
 
     -- Switching Controls --
-    for i = 0, props['Output Count'].Value-1 do
-      for s = 0, props['Input Count'].Value-1 do
+    for i = 1, props['Output Count'].Value do
+      for s = 1, props['Input Count'].Value do
           table.insert(ctrls, {
                   Name = "vid-input_" .. s .. "-output_" .. i,
                   ControlType = "Button",
@@ -90,7 +90,7 @@ table.insert(ctrls, {
   end
 
 -- input Controls --
-for i = 0, props['Input Count'].Value-1 do
+for i = 1, props['Input Count'].Value do
   table.insert(ctrls,{
     Name         = "input_" .. i .. "-name",
     ControlType  = "Text",
@@ -102,7 +102,7 @@ for i = 0, props['Input Count'].Value-1 do
 end
 
 -- output Controls --
-for i = 0, props['Output Count'].Value-1 do
+for i = 1, props['Output Count'].Value do
   table.insert(ctrls,{
     Name         = "output_" .. i .. "-name",
     ControlType  = "Text",
