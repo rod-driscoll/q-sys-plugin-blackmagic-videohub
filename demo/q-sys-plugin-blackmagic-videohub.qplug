@@ -3,11 +3,14 @@
 -- Q-Sys plugin for BlackMagic VideoHub
 -- <https://documents.blackmagicdesign.com/UserManuals/Videohub12GInstallation.pdf?_v=1680591612000>
 -- 20231212 v1.0.0 Rod Driscoll<rod@theavitgroup.com.au>
+  -- initial version
+-- 20240227 v1.1.0 Rod Driscoll<rod@theavitgroup.com.au>
+  -- input/output label index start changed from 0 to 1
 
 PluginInfo = {
   Name = "BlackMagic~VideoHub", -- The tilde here indicates folder structure in the Shematic Elements pane
-  Version = "1.0.0",
-  Id = "blackmagic-videohub.plugin.1.0.0",
+  Version = "1.1.0",
+  Id = "blackmagic-videohub.plugin.1.0.0", -- don't change Id if you want it to overwrite existing plugin (not even version number)
   Description = "Plugin for controlling a BlackMagic VideoHub",
   ShowDebug = true,
   Author = "Rod Driscoll"
@@ -170,8 +173,8 @@ function GetControls(props)
   })
   
       -- Switching Controls --
-      for i = 0, props['Output Count'].Value-1 do
-        for s = 0, props['Input Count'].Value-1 do
+      for i = 1, props['Output Count'].Value do
+        for s = 1, props['Input Count'].Value do
             table.insert(ctrls, {
                     Name = "vid-input_" .. s .. "-output_" .. i,
                     ControlType = "Button",
@@ -184,7 +187,7 @@ function GetControls(props)
     end
   
   -- input Controls --
-  for i = 0, props['Input Count'].Value-1 do
+  for i = 1, props['Input Count'].Value do
     table.insert(ctrls,{
       Name         = "input_" .. i .. "-name",
       ControlType  = "Text",
@@ -196,7 +199,7 @@ function GetControls(props)
   end
   
   -- output Controls --
-  for i = 0, props['Output Count'].Value-1 do
+  for i = 1, props['Output Count'].Value do
     table.insert(ctrls,{
       Name         = "output_" .. i .. "-name",
       ControlType  = "Text",
@@ -342,17 +345,17 @@ function GetControlLayout(props)
           self.Padding[1] + self.NumButtons[1]*(self.Padding[1] + self.Button.Size[1]),
           self.Padding[2] + self.NumButtons[2]*(self.Padding[2] + self.Button.Size[2]) + self.Label.Size[2]+ self.Padding[2] }
         self.GroupBox.Position  = self.Position
-        for i=0, self.NumButtons[1]-1 do          
-          for o=0, self.NumButtons[2]-1 do
+        for i=1, self.NumButtons[1] do          
+          for o=1, self.NumButtons[2] do
             local btn_ = helper.Copy(self.Button)
-            btn_['PrettyName'] = "Crosspoints~Output "..o.."~In" .. i .. " -> Out" .. o
+            btn_['PrettyName'] = "Crosspoints~Output "..o.."~In" ..i .. " -> Out" ..o
             btn_['Legend'] = tostring(i)
             btn_['Position']={
-              self.GroupBox.Position[1] + self.Padding[1] + i*(self.Button.Size[1] + self.Padding[1]), -- moving accross
-              self.GroupBox.Position[2] + self.Padding[2] + o*(self.Button.Size[2] + self.Padding[2]) + self.Label.Size[2]+ self.Padding[2] } -- moving down
-            btn_.Layout_ID = "vid-input_" ..i.. "-output_" .. o
-            if self.Outputs[o]==nil then self.Outputs[o]={} end
-            self.Outputs[o][i]=btn_
+              self.GroupBox.Position[1] + self.Padding[1] + (i-1)*(self.Button.Size[1] + self.Padding[1]), -- moving accross
+              self.GroupBox.Position[2] + self.Padding[2] + (o-1)*(self.Button.Size[2] + self.Padding[2]) + self.Label.Size[2]+ self.Padding[2] } -- moving down
+            btn_.Layout_ID = "vid-input_" ..i.. "-output_" ..o
+            if self.Outputs[(o-1)]==nil then self.Outputs[(o-1)]={} end
+            self.Outputs[(o-1)][(i-1)]=btn_
           end
         end
       end,
@@ -401,17 +404,17 @@ function GetControlLayout(props)
   
         local newPos_ = {}
   
-        for o=0, self.NumButtons-1 do
+        for o=1, self.NumButtons do
           newPos_ = {
             self.GroupBox.Position[1] + self.Padding[1], -- horiz always the same [output:0][input:0][horiz]
-            UI_crosspoints.Outputs[o][0].Position[2] } -- vert moves down
+            UI_crosspoints.Outputs[(o-1)][0].Position[2] } -- vert moves down
           
             -- left column of labels (numbers only)
           local num_ = helper.Copy(UI_crosspoints.Label)
           num_.Size = { 18, UI_crosspoints.Button.Size[2] }
           num_["Text"] = tostring(o)
           num_['Position'] = helper.Copy(newPos_)
-          if o==0 then 
+          if o==1 then 
             self.GroupBox.Size[1] = self.GroupBox.Size[1] + num_.Size[1] + self.Padding[1]
           end
           newPos_[1] = newPos_[1] + num_.Size[1] + self.Padding[1]
@@ -419,10 +422,10 @@ function GetControlLayout(props)
   
           -- Names
           local name_ = helper.Copy(self.NameText)
-          name_['PrettyName'] = "Outputs~".. o .."~name"
+          name_['PrettyName'] = "Outputs~"..o.."~name"
           name_['Position'] = helper.Copy(newPos_)
-          name_.Layout_ID = "output_" .. o .. "-name"
-          if o==0 then 
+          name_.Layout_ID = "output_" ..o.. "-name"
+          if o==1 then 
             self.GroupBox.Size[1] = self.GroupBox.Size[1] + name_.Size[1] + self.Padding[1]
           end
           newPos_[1] = newPos_[1] + name_.Size[1] + self.Padding[1]
@@ -430,17 +433,17 @@ function GetControlLayout(props)
           
           -- Locks
           local btn_ = helper.Copy(UI_crosspoints.Button)
-          btn_['PrettyName'] = "Outputs~".. o .."~lock"
+          btn_['PrettyName'] = "Outputs~"..o.."~lock"
           btn_['Legend'] = tostring(o)
           btn_['Position'] = helper.Copy(newPos_)
-          btn_.Layout_ID = "output_" .. o .. "-lock"
-          if o==0 then
+          btn_.Layout_ID = "output_" ..o.. "-lock"
+          if o==1 then
             self.GroupBox.Size[1] = self.GroupBox.Size[1] + btn_.Size[1] + self.Padding[1] end
           newPos_[1] = newPos_[1] + btn_.Size[1] + self.Padding[1]
           table.insert(self.Buttons, btn_)
           
           -- Lock label (the word lock)
-          if o==0 then
+          if o==1 then
             local lbl_ = helper.Copy(UI_crosspoints.Label)
             lbl_.Size[1] = btn_.Size[1]
             lbl_["Text"] = 'Lock'
@@ -499,25 +502,25 @@ function GetControlLayout(props)
         self.GroupBox.Position = self.Position
         self.GroupBox.Text="Inputs"
   
-        for i=0, self.NumButtons-1 do
+        for i=1, self.NumButtons do
           -- top row of labels (numbers only) above crosspoints
           local lbl_ = helper.Copy(UI_crosspoints.Label)
           lbl_.Size[1] = self.Button.Size[1]
           lbl_["Text"] = tostring(i)            
           lbl_['Position']={
-            UI_crosspoints.Outputs[0][i].Position[1], -- horiz moves accross
+            UI_crosspoints.Outputs[0][(i-1)].Position[1], -- horiz moves accross
             self.Position[2] + UI_crosspoints.Label.Size[2] + self.Padding[2] } -- vert always the same
           --if i==0 then self.GroupBox.Size[2] = self.GroupBox.Size[2] + lbl_.Size[2] + self.Padding[2] end
           table.insert(self.Labels, lbl_)
   
           -- Names - below crosspoints
           local name_ = helper.Copy(self.NameText)
-          name_['PrettyName'] = "Inputs~".. i .."~name"
+          name_['PrettyName'] = "Inputs~"..i.."~name"
           name_['Position']={ 
             lbl_.Position[1], -- horiz moves accross
             lbl_.Position[2] + lbl_.Size[2] + self.Padding[2] + UI_crosspoints.GroupBox.Size[2] + self.Padding[2] } -- vert always the same
-          name_.Layout_ID = "input_" .. i .. "-name"
-          if i==0 then self.GroupBox.Size[2] = self.GroupBox.Size[2] + name_.Size[2] + self.Padding[2] end
+          name_.Layout_ID = "input_" ..i.. "-name"
+          if i==1 then self.GroupBox.Size[2] = self.GroupBox.Size[2] + name_.Size[2] + self.Padding[2] end
           table.insert(self.Buttons, name_)
         end
         
@@ -571,15 +574,15 @@ function GetControlLayout(props)
           UI_inputObjects.GroupBox.Position[2] }
         self.GroupBox.Text="Selectors"
   
-        for o=0, self.NumButtons-1 do
+        for o=1, self.NumButtons do
           -- Names
           local selector_ = helper.Copy(self.Selector)
-          selector_['PrettyName'] = "Outputs~".. o .."~source"
+          selector_['PrettyName'] = "Outputs~"..o.."~source"
           selector_['Position']={ 
             self.GroupBox.Position[1] + self.Padding[1], 
-            UI_crosspoints.Outputs[o][0].Position[2] } -- vert moves down
-          selector_.Layout_ID = "output_" .. o .. "-source"
-          if o==0 then self.GroupBox.Size[1] = self.GroupBox.Size[1] + selector_.Size[1] + self.Padding[1] end
+            UI_crosspoints.Outputs[(o-1)][0].Position[2] } -- vert moves down
+          selector_.Layout_ID = "output_" ..o.. "-source"
+          if o==1 then self.GroupBox.Size[1] = self.GroupBox.Size[1] + selector_.Size[1] + self.Padding[1] end
           table.insert(self.Buttons, selector_)
         end
   
@@ -610,13 +613,12 @@ end
 
 --Start event based logic
 if Controls then
-  
   local helper = require('helpers')
   
   -- Control aliases
   Status = Controls.Status
   
-  local SimulateFeedback = true
+  local SimulateFeedback = System.IsEmulating 
   -- Variables and flags
   DebugTx=false
   DebugRx=false
@@ -1024,8 +1026,8 @@ if Controls then
   
   function SetRouteAllFeedback(outputs)
   	if DebugFunction then print("SetRouteAllFeedback("..table.concat(outputs)..")") end
-  	for o=1, #outputs do 
-  		SetRouteLayerFeedback(Layers.Video, o, outputs[o])
+  	for o=0, #outputs-1 do 
+  		SetRouteLayerFeedback(Layers.Video, o+1, outputs[o])
   	end
   end
   
@@ -1094,6 +1096,7 @@ if Controls then
   function ParseOutputLabels(str)
     --print('ParseOutputLabels('..str..')')
     local out_, name_ = str:match('(%d+) (.+)')
+  	out_ = tonumber(out_)+1
       --print('ParseOutputLabel('..out_..', '..name_..')')
       if Controls["output_" .. out_ .. "-name"]~=nil then
         Controls["output_" .. out_ .. "-name"].String = name_
@@ -1103,12 +1106,13 @@ if Controls then
   local InputLabels = {}
   
   function ParseInputLabels(str)
-    --print('ParseInputLabels('..str..')')
+    print('ParseInputLabels("'..str..'"")')
     local in_, name_ = str:match('(%d+) (.+)')
-      --print('ParseInputLabel('..in_..', '..name_..')')
+  	in_ = tonumber(in_)+1
+      print('ParseInputLabel('..in_..', '..name_..')')
       if Controls["input_" .. in_ .. "-name"]~=nil then
         Controls["input_" .. in_ .. "-name"].String = name_
-        InputLabels[tonumber(in_)] = str
+        InputLabels[in_-1] = name_
       end
   end
   
@@ -1117,6 +1121,7 @@ if Controls then
     local out_, v_ = str:match('(%d+) ([LUO])') -- U:unlock, L:lock(returns O, not L), O:On (lock)
     -- outputs can be locked so that the system can't unlock them, in this case they return 'L' 
     if v_~=nil then
+  		out_ = tonumber(out_)+1
       local locked_ = v_~='U'  
       --print('ParseLocks('..out_..', '..tostring(locked_)..')')
       if Controls["output_" .. out_ .. "-lock"]~=nil then
@@ -1126,18 +1131,22 @@ if Controls then
     end
   end
   
-  function ParseRoute(str) -- input and output 0 exist
-    --print('ParseRoute('..str..')')
+  function ParseRoute(str) -- input and output protocol starts at idx 0
+    print('ParseRoute("'..str..'")')
     local out_, in_ = str:match('(%d+) (%d+)')
+  	out_ = tonumber(out_)+1
+  	in_ = tonumber(in_)+1
     print('ParseRoute('..out_..', '..in_..')')
-    for i=0, Properties["Input Count"].Value do
+    for i=1, Properties["Input Count"].Value do
       if Controls["vid-input_" .. i .. "-output_" .. out_]~=nil then
-        --print("Controls[vid-input_" .. i .. "-output_" .. out_..'].Boolean = '..tostring(i==tonumber(in_)))
-        Controls["vid-input_" .. i .. "-output_" .. out_].Boolean = i==tonumber(in_)
+        --print("Controls[vid-input_" .. i .. "-output_" .. out_..'].Boolean = '..tostring(i==in_))
+        Controls["vid-input_" .. i .. "-output_" .. out_].Boolean = i==in_
       end
     end
-      --print('choice['..in_..']:'..Controls["output_" ..out_.. "-source"].Choices[tonumber(in_)+1])
-      Controls["output_" ..out_.. "-source"].String =  Controls["output_" ..out_.. "-source"].Choices[tonumber(in_)+1]
+    if Controls["output_" ..out_.. "-source"].Choices[in_] ~= nil then
+        print('choice['..in_..']:'..Controls["output_" ..out_.. "-source"].Choices[in_])
+        Controls["output_" ..out_.. "-source"].String = Controls["output_" ..out_.. "-source"].Choices[in_]
+    end
   end
   
   function ParseConfig(str)
@@ -1167,11 +1176,11 @@ if Controls then
   	local delimPos_ = msg:find("\x0a\x0a")
   	if DebugFunction then 
     	if delimPos_==nil then
-          print("ParseResponse("..string.len(msg)..", delimiter not found) Called") 
+          print("ParseResponse(len:"..string.len(msg)..", delimiter not found) Called") 
           local g_ = msg:gmatch('(.-)\x0a\x0a') -- get the sections of data
           print("match == nil: "..tostring(g_==nil))
         else
-          print("ParseResponse("..string.len(msg)..","..delimPos_..") Called") 
+          print("ParseResponse(len:"..string.len(msg)..", delimiter pos:"..delimPos_..") Called") 
         end
     end
   	local valid_ = msg:len()>0 and delimPos_~=nil
@@ -1191,12 +1200,13 @@ if Controls then
       local cb_ = nil
       local g_ = msg:gmatch('(.-)\x0a\x0a') -- get the sections of data
       for m_ in g_ do
-        --print('match: '..m_) -- good
+        print('match: '..m_) -- good
         if m_:sub(-1)~='\x0a' then m_=m_..'\x0a' end -- the first match removed the \x0a from the last match
-        local g1_ = m_:gmatch('(.-)\x0a')  -- e.g. "VIDEO OUTPUT ROUTING:\x0D\x0A2 3\x0D\x0A\x0D\x0A"i = 1
+        local g1_ = m_:gmatch('(.-)\x0a')  -- e.g. "VIDEO OUTPUT ROUTING:\x0D\x0A2 3\x0D\x0A\x0D\x0A" i = 1
         local i = 1
         for m1_ in g1_ do
-          --print('match1: '..m1_)
+          m1_ = m1_:match('(%C+)') -- remove control characters
+          print('match1: '..m1_)
           if i==1 then
             m1_ = m1_:gsub(':','')
             if callbacks_[m1_]~=nil then 
@@ -1214,14 +1224,14 @@ if Controls then
           i=i+1
         end
         if cb_~=nil and cb_==ParseInputLabels then 
-          --if DebugFunction then print('InputLabels') end
+          if DebugFunction then print('InputLabels') end
           local choices_ = {}
   		    for i = 0, Properties['Input Count'].Value-1 do
             if InputLabels[i]~=nil then table.insert(choices_, InputLabels[i]) 
-            else table.insert(choices_, i..' INPUT '..i) end
+            else table.insert(choices_, (i+1)..' INPUT '..(i+1)) end
           end
-          --if DebugFunction then print('choices_') end
-  		    for o = 0, Properties['Output Count'].Value-1 do
+          if DebugFunction then print('choices_') end
+  		    for o = 1, Properties['Output Count'].Value do
             Controls["output_" .. o .. "-source"].Choices = choices_
           end
         end
@@ -1241,15 +1251,15 @@ if Controls then
   local function SetRoute(layer, dest, src, state)
   	if DebugFunction then print("Send layer " .. layer .. " from src " .. src .. " to dest " .. dest) end
   	local cmd_ = Request["Route"]
-  	cmd_.Data = dest..' '.. src
+  	cmd_.Data = (dest-1)..' '.. (src-1)
   	Send(cmd_)
-  	if SimulateFeedback then ParseResponse(string.format("%s\x0a %s\x0a\x0a", cmd_.Command, cmd_.Data)) end
+  	if SimulateFeedback then ParseResponse(string.format("%s\x0d\x0a%s\x0a\x0a", cmd_.Command, cmd_.Data)) end
   end
   
   local function SetOutputLock(index, value)
   	if DebugFunction then print("Set output " .. index .. " lock to " .. tostring(value)) end
   	local cmd_ = Request["OutputLock"]
-  	cmd_.Data = index..' '.. (value and 'L' or 'U') -- U:unlock, L:lock(returns O, not L), O:On (lock)
+  	cmd_.Data = (index-1)..' '.. (value and 'L' or 'U') -- U:unlock, L:lock(returns O, not L), O:On (lock)
     -- outputs can be locked so that the system can't unlock them, in this case they return 'L' 
   	Send(cmd_)
   end
@@ -1258,8 +1268,10 @@ if Controls then
   -- Initialize
   -------------------------------------------------------------------------------	
   function TestFeedbacks()
-    local test_ = "INPUT LABELS:\x0A0 INPUT ZERO\x0A1 INPUT ONE\x0A2 INPUT TWO\x0A\x0A"
-    ParseResponse(test_)
+    if Controls["output_1-source"].Choices == nil or Controls["output_1-source"].Choices[1] == nil then
+      local test_ = "INPUT LABELS:\x0A0 INPUT ONE\x0A1 INPUT TWO\x0A2 INPUT THREE\x0A3 INPUT FOUR\x0A\x0A"
+      ParseResponse(test_)
+    end
   end
   
   function Initialize()
@@ -1273,7 +1285,7 @@ if Controls then
   
   	--helper.TablePrint(Properties, 1)
   	if(Properties['Output Count'].Value > 0 and Properties['Input Count'].Value > 0) then
-  		for o = 0, Properties['Output Count'].Value-1 do
+  		for o = 1, Properties['Output Count'].Value do
   
         Controls["output_" .. o .. "-lock"].EventHandler = function(ctl) 
     			if DebugFunction then print("output_" .. o .. "-lock pressed: "..tostring(ctl.Boolean)) end
@@ -1281,12 +1293,12 @@ if Controls then
         end
   
         Controls["output_" .. o .. "-source"].EventHandler = function(ctl) 
-          local in_, name_ = ctl.String:match('(%d+) (.+)')
-    			if DebugFunction then print("output_" .. o .. "-source selected: "..name_) end
-          SetRoute(Layers.Video, o, tonumber(in_), true) 
+  				local in_ = helper.GetIndexfromValue(ctl.Choices, ctl.String)
+          if DebugFunction then print("output_" .. o .. "-source selected: "..ctl.String) end
+          SetRoute(Layers.Video, o, in_, true) 
         end 
   
-  			for i = 0, Properties['Input Count'].Value-1 do
+  			for i = 1, Properties['Input Count'].Value do
   				-- Crosspoint EventHandlers
   				Controls["vid-input_" .. i .. "-output_" .. o].EventHandler = function(ctl) 
   					if DebugFunction then print("vid-input_" .. i .. "-output_" .. o .. " pressed") end
@@ -1300,7 +1312,10 @@ if Controls then
   
   	Disconnected()
   	Connect()
-  	--TestFeedbacks()
+    if System.IsEmulating then 
+      print("System is emulating.")
+  	  TestFeedbacks()
+    end
   	--Heartbeat:Start(PollRate)
   end
   

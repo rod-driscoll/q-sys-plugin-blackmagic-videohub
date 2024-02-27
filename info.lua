@@ -8,7 +8,7 @@
 PluginInfo = {
   Name = "BlackMagic~VideoHub", -- The tilde here indicates folder structure in the Shematic Elements pane
   Version = "1.1.0",
-  Id = "blackmagic-videohub.plugin.1.1.0",
+  Id = "blackmagic-videohub.plugin.1.0.0", -- don't change Id if you want it to overwrite existing plugin (not even version number)
   Description = "Plugin for controlling a BlackMagic VideoHub",
   ShowDebug = true,
   Author = "Rod Driscoll"
