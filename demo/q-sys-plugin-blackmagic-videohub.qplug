@@ -2,6 +2,7 @@
 -- Information block for the plugin
 -- Q-Sys plugin for BlackMagic VideoHub
 -- <https://documents.blackmagicdesign.com/UserManuals/Videohub12GInstallation.pdf?_v=1680591612000>
+-- Source code location: <https://github.com/rod-driscoll/q-sys-plugin-blackmagic-videohub>
 -- 20231212 v1.0.0 Rod Driscoll<rod@theavitgroup.com.au>
   -- initial version
 -- 20240227 v1.1.0 Rod Driscoll<rod@theavitgroup.com.au>
