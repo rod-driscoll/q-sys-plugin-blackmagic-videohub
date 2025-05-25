@@ -1,4 +1,4 @@
-local helper = require('helpers')
+--local helper = require('helpers')
 
 -- Control aliases
 Status = Controls.Status
@@ -53,6 +53,14 @@ function SetupDebugPrint()
 		DebugFunction=true
 	elseif DebugPrint=="All" then
 		DebugTx,DebugRx,DebugFunction=true,true,true
+	end
+end
+
+function GetIndexfromValue(table, value)
+	--print('GetIndexfromValue('..value..')')
+	for i=1, #table do
+		--print('['..i..'] = '..table[i])
+		if table[i] == value then return i end
 	end
 end
 
@@ -678,7 +686,7 @@ function Initialize()
       end
 
       Controls["output_" .. o .. "-source"].EventHandler = function(ctl) 
-				local in_ = helper.GetIndexfromValue(ctl.Choices, ctl.String)
+				local in_ = GetIndexfromValue(ctl.Choices, ctl.String)
         if DebugFunction then print("output_" .. o .. "-source selected: "..ctl.String) end
         SetRoute(Layers.Video, o, in_, true) 
       end 

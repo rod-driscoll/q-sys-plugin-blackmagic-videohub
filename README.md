@@ -11,7 +11,7 @@ Source code location: <https://github.com/rod-driscoll/q-sys-plugin-blackmagic-v
 
 ## Demo project
 
-A working demo Q-Sys Designer project is located at [//demo/BlackMagic VideoHub - Demo.qsys](https://github.com/rod-driscoll/q-sys-blackmagic-videohub/blob/main/demo/BlackMagic%20VideoHub%20-%20DEV.qsys)\
+A working demo Q-Sys Designer project is located at [//demo/BlackMagic VideoHub - Demo.qsys](https://github.com/rod-driscoll/q-sys-plugin-blackmagic-videohub/blob/main/demo/BlackMagic%20VideoHub%20-%20Demo.qsys)
 
 The demo project has all dependencies pre-loaded so it ready to load to use.
 
@@ -22,7 +22,7 @@ The demo project has all dependencies pre-loaded so it ready to load to use.
 Install dependencies before installing the plugin.\
 Dependencies (modules) are stored in the [//dependencies](https://github.com/rod-driscoll/q-sys-blackmagic-videohub/blob/main/dependencies/) folder
 
-Copy any/all module folders in the dependencies directly to the Q-Sys modules folder on your PC ("**%USERPROFILE%\Documents\QSC\Q-Sys Designer\Modules**") and then in Designer go to Tools > Designer Resources, and Install the module(s).\
+Copy any/all module folders in the dependencies directly to the Q-Sys modules folder on your PC ("**%USERPROFILE%\Documents\QSC\Q-Sys Designer\Modules**") and then in Designer go to Tools > Designer Resources, and Install the module(s).
 
 For more detailed instructions on installing dependencies follow the instructions in the README located in the dependencies folder.
 

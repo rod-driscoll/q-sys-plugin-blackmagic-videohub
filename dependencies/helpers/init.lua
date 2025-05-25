@@ -137,7 +137,7 @@ obj.dump = function(o)
     end
 end
 
--- this might be replaceable wit TablePrint or table:concat when i learn more lua
+-- this might be replaceable with TablePrint or table:concat when i learn more lua
 obj.PrintControl = function(ctl)
     print('Control ----------------------------')
     --obj.TablePrint(ctl,2)

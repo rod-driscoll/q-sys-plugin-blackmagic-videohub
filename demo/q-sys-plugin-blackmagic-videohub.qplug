@@ -6,10 +6,12 @@
   -- initial version
 -- 20240227 v1.1.0 Rod Driscoll<rod@theavitgroup.com.au>
   -- input/output label index start changed from 0 to 1
+-- 20250525 v1.1.1 Rod Driscoll<rod@theavitgroup.com.au>
+  -- placed dependency functions directly in plugin so there is no need to install dependecies.
 
 PluginInfo = {
   Name = "BlackMagic~VideoHub", -- The tilde here indicates folder structure in the Shematic Elements pane
-  Version = "1.1.0",
+  Version = "1.1.1",
   Id = "blackmagic-videohub.plugin.1.0.0", -- don't change Id if you want it to overwrite existing plugin (not even version number)
   Description = "Plugin for controlling a BlackMagic VideoHub",
   ShowDebug = true,
@@ -613,7 +615,7 @@ end
 
 --Start event based logic
 if Controls then
-  local helper = require('helpers')
+  --local helper = require('helpers')
   
   -- Control aliases
   Status = Controls.Status
@@ -668,6 +670,14 @@ if Controls then
   		DebugFunction=true
   	elseif DebugPrint=="All" then
   		DebugTx,DebugRx,DebugFunction=true,true,true
+  	end
+  end
+  
+  function GetIndexfromValue(table, value)
+  	--print('GetIndexfromValue('..value..')')
+  	for i=1, #table do
+  		--print('['..i..'] = '..table[i])
+  		if table[i] == value then return i end
   	end
   end
   
@@ -1293,7 +1303,7 @@ if Controls then
         end
   
         Controls["output_" .. o .. "-source"].EventHandler = function(ctl) 
-  				local in_ = helper.GetIndexfromValue(ctl.Choices, ctl.String)
+  				local in_ = GetIndexfromValue(ctl.Choices, ctl.String)
           if DebugFunction then print("output_" .. o .. "-source selected: "..ctl.String) end
           SetRoute(Layers.Video, o, in_, true) 
         end 

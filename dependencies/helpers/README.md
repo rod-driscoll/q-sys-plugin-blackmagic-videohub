@@ -10,7 +10,7 @@ Helper functions for Q-Ssy module development
 4. Open the text controller Lua editor and paste the following code.
 
 ```lua
-helpers = require("Helpers")
+helpers = require("helpers")
 ```
 
 ## Changelog
